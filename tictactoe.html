@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful Tic Tac Toe</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #FFD700;
+        }
+        .container {
+            text-align: center;
+            background-color: #FF69B4;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            position: relative;
+            max-width: 80%;
+            width: 400px;
+        }
+        h1, h2 {
+            color: #4B0082;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            background-color: #00CED1;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #008B8B;
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            gap: 5px;
+            margin: 20px auto;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #98FB98;
+            border: 3px solid #4B0082;
+            border-radius: 10px;
+            font-size: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .cell:hover {
+            background-color: #90EE90;
+        }
+        #status {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4B0082;
+        }
+        input {
+            font-size: 18px;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: 2px solid #4B0082;
+        }
+        #user-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #98FB98;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+        }
+        #user-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="welcome-screen">
+            <h1>Welcome to Colorful Tic Tac Toe!</h1>
+            <button onclick="showUserSetup()">Start</button>
+        </div>
+        <div id="user-setup-screen" style="display: none;">
+            <h2>Set Up Your Profile</h2>
+            <input type="text" id="username" placeholder="Enter your username">
+            <br>
+            <input type="file" id="profile-photo" accept="image/*">
+            <br>
+            <button onclick="skipPhotoUpload()">Skip Photo Upload</button>
+            <button onclick="setUserProfile()">Continue</button>
+        </div>
+        <div id="menu-screen" style="display: none;">
+            <h2>Choose a game mode:</h2>
+            <button onclick="showPlayWithFriends()">Play with friends</button>
+            <button onclick="showOnlinePlay()">Play online</button>
+            <button onclick="startGame()">Play with computer</button>
+        </div>
+        <div id="play-with-friends-screen" style="display: none;">
+            <h2>Play with Friends</h2>
+            <button onclick="showCreateRoom()">Create a Room</button>
+            <button onclick="showJoinRoom()">Join Room</button>
+        </div>
+        <div id="create-room-screen" style="display: none;">
+            <h2>Room Created!</h2>
+            <p>Share this code with your friend:</p>
+            <h3 id="room-code"></h3>
+            <button onclick="startMultiplayerGame()">Start Game</button>
+        </div>
+        <div id="join-room-screen" style="display: none;">
+            <h2>Join Room</h2>
+            <input type="text" id="join-code" placeholder="Enter room code">
+            <button onclick="joinRoom()">Join</button>
+        </div>
+        <div id="online-play-screen" style="display: none;">
+            <h2>Searching for opponent...</h2>
+            <p>Please wait while we connect you to another player.</p>
+            <button onclick="startOnlineGame()">Simulate Found Opponent</button>
+        </div>
+        <div id="game-screen" style="display: none;">
+            <h2>Tic Tac Toe</h2>
+            <div class="game-board" id="board"></div>
+            <p id="status"></p>
+            <button onclick="resetGame()">Play Again</button>
+            <button onclick="showMenu()">Main Menu</button>
+        </div>
+    </div>
+    <div id="user-info" style="display: none;">
+        <img id="user-photo" src="https://via.placeholder.com/50" alt="Profile Photo">
+        <p id="user-name"></p>
+    </div>
+
+    <script>
+        let currentPlayer = 'X';
+        let gameBoard = ['', '', '', '', '', '', '', '', ''];
+        let gameActive = false;
+        let username = '';
+        let profilePhotoUrl = 'https://via.placeholder.com/50';
+
+        function showUserSetup() {
+            hideAllScreens();
+            document.getElementById('user-setup-screen').style.display = 'block';
+        }
+
+        function setUserProfile() {
+            username = document.getElementById('username').value || 'Player';
+            let fileInput = document.getElementById('profile-photo');
+            if (fileInput.files && fileInput.files[0]) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    profilePhotoUrl = e.target.result;
+                    updateUserInfo();
+                }
+                reader.readAsDataURL(fileInput.files[0]);
+            }
+            showMenu();
+        }
+
+        function skipPhotoUpload() {
+            username = document.getElementById('username').value || 'Player';
+            updateUserInfo();
+            showMenu();
+        }
+
+        function updateUserInfo() {
+            document.getElementById('user-name').textContent = username;
+            document.getElementById('user-photo').src = profilePhotoUrl;
+            document.getElementById('user-info').style.display = 'block';
+        }
+
+        function showMenu() {
+            hideAllScreens();
+            document.getElementById('menu-screen').style.display = 'block';
+            updateUserInfo();
+        }
+
+        function showPlayWithFriends() {
+            hideAllScreens();
+            document.getElementById('play-with-friends-screen').style.display = 'block';
+        }
+
+        function showOnlinePlay() {
+            hideAllScreens();
+            document.getElementById('online-play-screen').style.display = 'block';
+        }
+
+        function showCreateRoom() {
+            hideAllScreens();
+            document.getElementById('create-room-screen').style.display = 'block';
+            document.getElementById('room-code').textContent = Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function showJoinRoom() {
+            hideAllScreens();
+            document.getElementById('join-room-screen').style.display = 'block';
+        }
+
+        function joinRoom() {
+            let code = document.getElementById('join-code').value;
+            if (code) {
+                startMultiplayerGame();
+            } else {
+                alert('Please enter a room code');
+            }
+        }
+
+        function startMultiplayerGame() {
+            hideAllScreens();
+            document.getElementById('game-screen').style.display = 'block';
+            resetGame();
+        }
+
+        function startOnlineGame() {
+            hideAllScreens();
+            document.getElementById('game-screen').style.display = 'block';
+            resetGame();
+        }
+
+        function hideAllScreens() {
+            let screens = ['welcome-screen', 'user-setup-screen', 'menu-screen', 'play-with-friends-screen', 'create-room-screen', 'join-room-screen', 'online-play-screen', 'game-screen'];
+            screens.forEach(screen => document.getElementById(screen).style.display = 'none');
+        }
+
+        function startGame() {
+            hideAllScreens();
+            document.getElementById('game-screen').style.display = 'block';
+            resetGame();
+        }
+
+        function resetGame() {
+            currentPlayer = 'X';
+            gameBoard = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            document.getElementById('status').textContent = '';
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                board.innerHTML += `<div class="cell" onclick="makeMove(${i})">${gameBoard[i]}</div>`;
+            }
+        }
+
+        function makeMove(index) {
+            if (gameBoard[index] === '' && gameActive) {
+                gameBoard[index] = currentPlayer;
+                renderBoard();
+                if (checkWin()) {
+                    document.getElementById('status').textContent = `Player ${currentPlayer} wins!`;
+                    gameActive = false;
+                } else if (gameBoard.every(cell => cell !== '')) {
+                    document.getElementById('status').textContent = "It's a draw!";
+                    gameActive = false;
+                } else {
+                    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    if (currentPlayer === 'O' && document.getElementById('menu-screen').style.display === 'none') {
+                        setTimeout(computerMove, 500);
+                    }
+                }
+            }
+        }
+
+        function computerMove() {
+            if (gameActive) {
+                let availableMoves = gameBoard.reduce((acc, cell, index) => {
+                    if (cell === '') acc.push(index);
+                    return acc;
+                }, []);
+                let randomMove = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+                makeMove(randomMove);
+            }
+        }
+
+        function checkWin() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6] // Diagonals
+            ];
+
+            return winPatterns.some(pattern => {
+                const [a, b, c] = pattern;
+                return gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c];
+            });
+        }
+
+        // Initialize the game
+        hideAllScreens();
+        document.getElementById('welcome-screen').style.display = 'block';
+    </script>
+</body>
+</html>
